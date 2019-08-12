@@ -23,19 +23,14 @@ public class CopyClassFiles extends AnAction {
     @Override
     public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
+        initCompilerOut(project);
 
-        // TODO fix module tight up
-        Module module = ModuleManager.getInstance(project).findModuleByName("src");
-        compilerOut = CompilerPathsEx.getModuleOutputPath(module, false);
-
-        ChangeListManager changeListManager = ChangeListManager.getInstance(project);
-        LocalChangeList localChangeList = changeListManager.getDefaultChangeList();
+        LocalChangeList localChangeList = ChangeListManager.getInstance(project).getDefaultChangeList();
         Collection<Change> changes = localChangeList.getChanges();
 
         changes.stream()
                 .filter(el -> el.getBeforeRevision().getFile().getPath().endsWith(".java"))
                 .forEach(this::copyClassFile);
-
     }
 
     private void copyClassFile(final Change change) {
@@ -65,6 +60,14 @@ public class CopyClassFiles extends AnAction {
             });
         } catch (IOException ioe) {
             LOG.error("Error during searching for modified files.", ioe);
+        }
+    }
+
+    private void initCompilerOut(Project project) {
+        if (compilerOut == null) {
+            // TODO fix module tight up
+            Module module = ModuleManager.getInstance(project).findModuleByName("src");
+            compilerOut = CompilerPathsEx.getModuleOutputPath(module, false);
         }
     }
 }
