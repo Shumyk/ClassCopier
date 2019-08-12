@@ -1,0 +1,22 @@
+<idea-plugin>
+  <id>com.shumyk</id>
+  <name>ClassCopier</name>
+  <version>1.0</version>
+  <vendor email="dima.shumyk@gmail.com" url="https://github.com/Shumyk">Dima Shumyk</vendor>
+
+  <description><![CDATA[
+      Helps to copy .class files into working directory
+    ]]></description>
+
+  <idea-version since-build="173.0"/>
+
+  <actions>
+    <action id="CopyClass.VersionControl.Toolbar"
+            class="com.shumyk.stackoverflowplugin.actions.CopyClassFiles"
+            text="Copy .class files here"
+            description="Copying selected .class files into src module">
+        <add-to-group group-id="ChangesViewToolbar" anchor="last"/>
+    </action>
+  </actions>
+
+</idea-plugin>
