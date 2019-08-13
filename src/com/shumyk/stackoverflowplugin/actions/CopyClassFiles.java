@@ -2,11 +2,14 @@ package com.shumyk.stackoverflowplugin.actions;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.compiler.ex.CompilerPathsEx;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.*;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -53,7 +56,10 @@ public class CopyClassFiles extends AnAction {
 
             files.forEach(file -> {
                 try {
-                    Path destination = Paths.get(javaAbsoluteDirLocation + file.toFile().getName());
+                    String destinationUrl = javaAbsoluteDirLocation + file.toFile().getName();
+                    setFileWritable(destinationUrl);
+
+                    Path destination = Paths.get(destinationUrl);
                     Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException ioe) {
                     LOG.error("Error during copying of file.", ioe);
@@ -64,6 +70,18 @@ public class CopyClassFiles extends AnAction {
         } finally {
             if (files != null) files.close();
         }
+    }
+
+    private void setFileWritable(final String fileUrl) {
+            Runnable writeAction = () -> {
+                try {
+                    VirtualFile file = VirtualFileManager.getInstance().findFileByUrl("file://".concat(fileUrl));
+                    if (file != null) file.setWritable(true);
+                } catch (IOException ioe) {
+                    LOG.error("Error during setting file as writable.", ioe);
+                }
+            };
+            ApplicationManager.getApplication().runWriteAction(writeAction);
     }
 
     private void initCompilerOut(Project project) {
