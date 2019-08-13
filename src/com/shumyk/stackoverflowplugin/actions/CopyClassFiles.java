@@ -37,19 +37,20 @@ public class CopyClassFiles extends AnAction {
         String fullFilename = change.getVirtualFile().getPath();
 
         final String javaAbsoluteDirLocation = fullFilename.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
-        final String javaFileLocation = fullFilename.replaceFirst(".+/src/main/java", "");
+        final String javaFileLocation = fullFilename.replaceFirst(".+/src/Beans", ""); // TODO need to remove this hardcoding and somehow dynamically find src folder
         final String classFileDirDestination = javaFileLocation.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
         final String classFilename = javaFileLocation
                 .replaceFirst(".+/", "")
                 .replaceFirst(".java$", "");
 
-        Path compilerOutputPath = Paths.get(compilerOut + classFileDirDestination);
-        try (
-                Stream<Path> files = Files.find(compilerOutputPath, 50, (path, attributes) -> {
-                    String filename = path.toFile().getName();
-                    return filename.replaceFirst(".*/", "").contains(classFilename);
-                });
-        ) {
+        Stream<Path> files = null;
+        try {
+            Path compilerOutputPath = Paths.get(compilerOut + classFileDirDestination);
+            files = Files.find(compilerOutputPath, 50, (path, attributes) -> {
+                String filename = path.toFile().getName();
+                return filename.matches("^" + classFilename + "(\\$.+\\.|\\.)class") && filename.endsWith(".class");
+            });
+
             files.forEach(file -> {
                 try {
                     Path destination = Paths.get(javaAbsoluteDirLocation + file.toFile().getName());
@@ -60,6 +61,8 @@ public class CopyClassFiles extends AnAction {
             });
         } catch (IOException ioe) {
             LOG.error("Error during searching for modified files.", ioe);
+        } finally {
+            if (files != null) files.close();
         }
     }
 
