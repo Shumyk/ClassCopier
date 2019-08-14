@@ -12,8 +12,8 @@
 
   <actions>
     <action id="CopyClass.VersionControl.Toolbar"
-            class="com.shumyk.stackoverflowplugin.actions.CopyClassFiles"
-            text="Copy .class files here"
+            class="com.shumyk.classcopier.actions.CopyClassFiles"
+            text="Copy .class files"
             description="Copying selected .class files into src module">
         <add-to-group group-id="ChangesViewToolbar" anchor="last"/>
     </action>

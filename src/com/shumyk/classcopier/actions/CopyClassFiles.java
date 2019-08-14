@@ -1,5 +1,6 @@
-package com.shumyk.stackoverflowplugin.actions;
+package com.shumyk.classcopier.actions;
 
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -10,6 +11,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
+import com.shumyk.classcopier.notificator.NotificationCollector;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -21,11 +23,15 @@ public class CopyClassFiles extends AnAction {
 
     private static final Logger LOG = Logger.getLogger(CopyClassFiles.class);
 
+    private NotificationCollector filesNotFoundNotificator;
+    private NotificationCollector failedCopyNotificator;
+
     private String compilerOut;
 
     @Override
     public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
+        initCollectors(project);
         initCompilerOut(project);
 
         LocalChangeList localChangeList = ChangeListManager.getInstance(project).getDefaultChangeList();
@@ -34,6 +40,8 @@ public class CopyClassFiles extends AnAction {
         changes.stream()
                 .filter(el -> el.getBeforeRevision().getFile().getPath().endsWith(".java"))
                 .forEach(this::copyClassFile);
+
+        triggerCollectors();
     }
 
     private void copyClassFile(final Change change) {
@@ -47,26 +55,27 @@ public class CopyClassFiles extends AnAction {
                 .replaceFirst(".java$", "");
 
         Stream<Path> files = null;
+        String compilerOutputUrl = compilerOut + classFileDirDestination;
         try {
-            Path compilerOutputPath = Paths.get(compilerOut + classFileDirDestination);
+            Path compilerOutputPath = Paths.get(compilerOutputUrl);
             files = Files.find(compilerOutputPath, 50, (path, attributes) -> {
                 String filename = path.toFile().getName();
                 return filename.matches("^" + classFilename + "(\\$.+\\.|\\.)class") && filename.endsWith(".class");
             });
 
             files.forEach(file -> {
+                String destinationUrl = javaAbsoluteDirLocation + file.toFile().getName();
                 try {
-                    String destinationUrl = javaAbsoluteDirLocation + file.toFile().getName();
                     setFileWritable(destinationUrl);
 
                     Path destination = Paths.get(destinationUrl);
                     Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException ioe) {
-                    LOG.error("Error during copying of file.", ioe);
+                    failedCopyNotificator.collect("Can't copy files.\nPlease check that files have not read-only status:", destinationUrl);
                 }
             });
         } catch (IOException ioe) {
-            LOG.error("Error during searching for modified files.", ioe);
+            filesNotFoundNotificator.collect("Apparently, output folder is empty.\nCouldn't find:\n", compilerOutputUrl);
         } finally {
             if (files != null) files.close();
         }
@@ -84,11 +93,22 @@ public class CopyClassFiles extends AnAction {
             ApplicationManager.getApplication().runWriteAction(writeAction);
     }
 
+
+    private void initCollectors(Project project) {
+        filesNotFoundNotificator = new NotificationCollector("FailedFindFiles", project, "ClassCopier", NotificationType.ERROR);
+        failedCopyNotificator = new NotificationCollector("FailedCopyFiles", project, "ClassCopier", NotificationType.ERROR);
+    }
+
     private void initCompilerOut(Project project) {
         if (compilerOut == null) {
             // TODO fix module tight up
             Module module = ModuleManager.getInstance(project).findModuleByName("src");
             compilerOut = CompilerPathsEx.getModuleOutputPath(module, false);
         }
+    }
+
+    private void triggerCollectors() {
+        filesNotFoundNotificator.doNotify();
+        failedCopyNotificator.doNotify();
     }
 }
