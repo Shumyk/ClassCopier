@@ -28,6 +28,7 @@ public class CopyClassFiles extends AnAction {
     private NotificationCollector failedCopyNotificator;
 
     private String compilerOut;
+    private String sourceRoot;
 
     @Override
     public void actionPerformed(AnActionEvent event) {
@@ -49,7 +50,7 @@ public class CopyClassFiles extends AnAction {
         String fullFilename = change.getVirtualFile().getPath();
 
         final String javaAbsoluteDirLocation = fullFilename.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
-        final String javaFileLocation = fullFilename.replaceFirst(".+/src/Beans", ""); // TODO need to remove this hardcoding and somehow dynamically find src folder
+        final String javaFileLocation = fullFilename.replaceFirst(".+" + sourceRoot, "");
         final String classFileDirDestination = javaFileLocation.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
         final String classFilename = javaFileLocation
                 .replaceFirst(".+/", "")
@@ -113,6 +114,7 @@ public class CopyClassFiles extends AnAction {
             // if module has some sources root - we need to output folder for this root
             if (files.length > 0) {
                 moduleWithRoots = module;
+                sourceRoot = "/" + files[0].getParent().getName() + "/" + files[0].getName();
             }
         }
 
