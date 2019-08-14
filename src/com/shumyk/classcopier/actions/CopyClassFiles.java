@@ -14,10 +14,14 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.shumyk.classcopier.notificator.NotificationCollector;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class CopyClassFiles extends AnAction {
@@ -28,10 +32,9 @@ public class CopyClassFiles extends AnAction {
     private NotificationCollector failedCopyNotificator;
 
     private String compilerOut;
-    private String sourceRoot;
+    private List<String> sourceRoots;
 
-    @Override
-    public void actionPerformed(AnActionEvent event) {
+    @Override public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
         initCollectors(project);
         initCompilerOut(project);
@@ -47,10 +50,10 @@ public class CopyClassFiles extends AnAction {
     }
 
     private void copyClassFile(final Change change) {
-        String fullFilename = change.getVirtualFile().getPath();
+        String fileUrl = change.getVirtualFile().getPath();
 
-        final String javaAbsoluteDirLocation = fullFilename.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
-        final String javaFileLocation = fullFilename.replaceFirst(".+" + sourceRoot, "");
+        final String javaAbsoluteDirLocation = fileUrl.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
+        final String javaFileLocation = getRelativeFileLocation(fileUrl);
         final String classFileDirDestination = javaFileLocation.replaceFirst("[a-zA-Z0-9_.-]+java$", "");
         final String classFilename = javaFileLocation
                 .replaceFirst(".+/", "")
@@ -95,6 +98,24 @@ public class CopyClassFiles extends AnAction {
             ApplicationManager.getApplication().runWriteAction(writeAction);
     }
 
+    /**
+     * Walks through source roots that we have in this module and searches proper correct root for file URL.
+     * If nothing found then return null.
+     * File URL is cut with found file URL and returned relative path to file.
+     * @param fileUrl - full path to a file
+     * @return null - when nothing found, relative according to source root path.
+     */
+    @Nullable private String getRelativeFileLocation(@NotNull final String fileUrl) {
+        String correctRoot = "";
+        // searching for proper source root
+        for (String root: sourceRoots) {
+            correctRoot = fileUrl.contains(root) ? root : correctRoot;
+        }
+
+        if (correctRoot.equals("")) return null;
+        // cutting all path with source root folder in order to make relative
+        return fileUrl.replaceFirst(".+" + correctRoot, "");
+    }
 
     private void initCollectors(Project project) {
         filesNotFoundNotificator = new NotificationCollector("FailedFindFiles", project, "ClassCopier", NotificationType.ERROR);
@@ -114,7 +135,11 @@ public class CopyClassFiles extends AnAction {
             // if module has some sources root - we need to output folder for this root
             if (files.length > 0) {
                 moduleWithRoots = module;
-                sourceRoot = "/" + files[0].getParent().getName() + "/" + files[0].getName();
+
+                sourceRoots = new ArrayList<>();
+                for (VirtualFile file : files) {
+                    sourceRoots.add("/" + file.getParent().getName() + "/" + file.getName());
+                }
             }
         }
 
