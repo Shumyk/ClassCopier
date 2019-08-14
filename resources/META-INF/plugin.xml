@@ -10,6 +10,8 @@
 
   <idea-version since-build="173.0"/>
 
+  <depends>com.intellij.modules.java</depends>
+
   <actions>
     <action id="CopyClass.VersionControl.Toolbar"
             class="com.shumyk.classcopier.actions.CopyClassFiles"
