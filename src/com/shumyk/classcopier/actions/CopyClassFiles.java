@@ -8,6 +8,7 @@ import com.intellij.openapi.compiler.ex.CompilerPathsEx;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -99,12 +100,29 @@ public class CopyClassFiles extends AnAction {
         failedCopyNotificator = new NotificationCollector("FailedCopyFiles", project, "ClassCopier", NotificationType.ERROR);
     }
 
+    /**
+     * Walks through all modules in provided project and searches module with sources root.
+     * For this root then obtains compiler output folder path and sets to class variable.
+     * @param project - current project
+     */
     private void initCompilerOut(Project project) {
-        if (compilerOut == null) {
-            // TODO fix module tight up
-            Module module = ModuleManager.getInstance(project).findModuleByName("src");
-            compilerOut = CompilerPathsEx.getModuleOutputPath(module, false);
+        Module moduleWithRoots = null;
+        // search through all modules in project
+        for (Module module: ModuleManager.getInstance(project).getModules()) {
+            VirtualFile[] files = ModuleRootManager.getInstance(module).getSourceRoots();
+            // if module has some sources root - we need to output folder for this root
+            if (files.length > 0) {
+                moduleWithRoots = module;
+            }
         }
+
+        // in case it didn't find anything try find default module 'src'
+        if (moduleWithRoots == null)
+            moduleWithRoots = ModuleManager.getInstance(project).findModuleByName("src");
+
+        // obtain compiler output folder for module
+        if (moduleWithRoots != null)
+            compilerOut = CompilerPathsEx.getModuleOutputPath(moduleWithRoots, false);
     }
 
     private void triggerCollectors() {
