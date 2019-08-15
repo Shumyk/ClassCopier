@@ -1,0 +1,51 @@
+package com.shumyk.classcopier.notificator;
+
+import com.intellij.notification.NotificationType;
+import com.intellij.openapi.project.Project;
+
+public class NotificationWorker {
+
+    private static final String GROUP_ID_FFF = "FailedFindFiles";
+    private static final String GROUP_ID_FCF = "FailedCopyFiles";
+    private static final String TITLE = "ClassCopier";
+
+    private static final String MAIN_MESSAGE_FC = "Can't copy files.\nPlease check that files have not read-only status:";
+    private static final String MAIN_MESSAGE_FF = "Apparently, output folder is empty.\nCouldn't find:\n";
+
+    private NotificationCollector failedFindNotificator;
+    private NotificationCollector failedCopyNotificator;
+
+    /**
+     * Inits both notificators for provided project.
+     * All other parameters are default.
+     * @param project - current project where notifications should appear.
+     */
+    public NotificationWorker(Project project) {
+        failedFindNotificator = new NotificationCollector(GROUP_ID_FFF, project, TITLE, NotificationType.ERROR);
+        failedCopyNotificator = new NotificationCollector(GROUP_ID_FCF, project, TITLE, NotificationType.ERROR);
+    }
+
+    /**
+     * Adds new additional message to Failed Copy notificator.
+     * @param additionalMessage - new additional message
+     */
+    public void addFailedCopy(final String additionalMessage) {
+        failedCopyNotificator.collect(MAIN_MESSAGE_FC, additionalMessage);
+    }
+
+    /**
+     * Adds new additional message to Failed Found notificator.
+     * @param additionalMessage - new additional message
+     */
+    public void addFailedFind(final String additionalMessage) {
+        failedFindNotificator.collect(MAIN_MESSAGE_FF, additionalMessage);
+    }
+
+    /**
+     * Show all notifications that were collected in project.
+     */
+    public void doNotify() {
+        failedFindNotificator.doNotify();
+        failedCopyNotificator.doNotify();
+    }
+}

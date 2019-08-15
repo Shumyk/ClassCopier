@@ -1,6 +1,5 @@
 package com.shumyk.classcopier.actions;
 
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -12,7 +11,7 @@ import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
-import com.shumyk.classcopier.notificator.NotificationCollector;
+import com.shumyk.classcopier.notificator.NotificationWorker;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,15 +27,14 @@ public class CopyClassFiles extends AnAction {
 
     private static final Logger LOG = Logger.getLogger(CopyClassFiles.class);
 
-    private NotificationCollector filesNotFoundNotificator;
-    private NotificationCollector failedCopyNotificator;
+    private NotificationWorker notificationWorker;
 
     private String compilerOut;
     private List<String> sourceRoots;
 
     @Override public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
-        initCollectors(project);
+        notificationWorker = new NotificationWorker(project);
         initCompilerOut(project);
 
         LocalChangeList localChangeList = ChangeListManager.getInstance(project).getDefaultChangeList();
@@ -46,7 +44,7 @@ public class CopyClassFiles extends AnAction {
                 .filter(el -> el.getBeforeRevision().getFile().getPath().endsWith(".java"))
                 .forEach(this::copyClassFile);
 
-        triggerCollectors();
+        notificationWorker.doNotify();
     }
 
     private void copyClassFile(final Change change) {
@@ -76,11 +74,11 @@ public class CopyClassFiles extends AnAction {
                     Path destination = Paths.get(destinationUrl);
                     Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException ioe) {
-                    failedCopyNotificator.collect("Can't copy files.\nPlease check that files have not read-only status:", destinationUrl);
+                    notificationWorker.addFailedCopy(destinationUrl);
                 }
             });
         } catch (IOException ioe) {
-            filesNotFoundNotificator.collect("Apparently, output folder is empty.\nCouldn't find:\n", compilerOutputUrl);
+            notificationWorker.addFailedFind(compilerOutputUrl);
         } finally {
             if (files != null) files.close();
         }
@@ -117,11 +115,6 @@ public class CopyClassFiles extends AnAction {
         return fileUrl.replaceFirst(".+" + correctRoot, "");
     }
 
-    private void initCollectors(Project project) {
-        filesNotFoundNotificator = new NotificationCollector("FailedFindFiles", project, "ClassCopier", NotificationType.ERROR);
-        failedCopyNotificator = new NotificationCollector("FailedCopyFiles", project, "ClassCopier", NotificationType.ERROR);
-    }
-
     /**
      * Walks through all modules in provided project and searches module with sources root.
      * For this root then obtains compiler output folder path and sets to class variable.
@@ -150,10 +143,5 @@ public class CopyClassFiles extends AnAction {
         // obtain compiler output folder for module
         if (moduleWithRoots != null)
             compilerOut = CompilerPathsEx.getModuleOutputPath(moduleWithRoots, false);
-    }
-
-    private void triggerCollectors() {
-        filesNotFoundNotificator.doNotify();
-        failedCopyNotificator.doNotify();
     }
 }
