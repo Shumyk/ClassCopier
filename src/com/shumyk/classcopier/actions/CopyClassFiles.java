@@ -8,6 +8,7 @@ import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ModuleRootManager;
+import com.intellij.openapi.vcs.FileStatus;
 import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -41,7 +42,13 @@ public class CopyClassFiles extends AnAction {
         Collection<Change> changes = localChangeList.getChanges();
 
         changes.stream()
-                .filter(el -> el.getBeforeRevision().getFile().getPath().endsWith(".java"))
+                .filter(el -> {
+                    String filePath = el.getVirtualFile().getPath();
+                    boolean isJavaFile = filePath.endsWith(".java");
+                    if (el.getFileStatus() == FileStatus.ADDED && isJavaFile)
+                        notificationWorker.addNewFile(filePath.replaceFirst("\\.java$", ".class"));
+                   return isJavaFile;
+                })
                 .forEach(this::copyClassFile);
 
         notificationWorker.doNotify();
