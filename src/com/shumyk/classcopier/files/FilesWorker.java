@@ -1,4 +1,4 @@
-package com.shumyk.classcopier;
+package com.shumyk.classcopier.files;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.vfs.VirtualFile;
