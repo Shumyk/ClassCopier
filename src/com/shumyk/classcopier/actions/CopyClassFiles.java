@@ -53,26 +53,22 @@ public class CopyClassFiles extends AnAction {
         String fileUrl = change.getVirtualFile().getPath();
 
         final String javaAbsoluteDirLocation = PathBusiness.cutFilename(fileUrl);
-        final String javaFileLocation = PathBusiness.getRelativeFileLocation(sourceRoots, fileUrl);
-        final String classFileDirDestination = PathBusiness.cutFilename(javaFileLocation);
-        final String classFilename = PathBusiness.getFilenameWithoutExtension(javaFileLocation);
+        final String relativeJavaFileLocation = PathBusiness.getRelativeFileLocation(sourceRoots, fileUrl);
+        final String filePackage = PathBusiness.cutFilename(relativeJavaFileLocation);
+        final String filename = PathBusiness.getFilenameWithoutExtension(relativeJavaFileLocation);
 
         Stream<Path> files = null;
-        String compilerOutputUrl = compilerOut + classFileDirDestination;
+        String compilerOutputUrl = compilerOut + filePackage;
         try {
             Path compilerOutputPath = Paths.get(compilerOutputUrl);
-            files = Files.find(compilerOutputPath, 50, (path, attributes) -> {
-                String filename = path.toFile().getName();
-                return filename.matches(PathBusiness.regexFilename(classFilename)) && PathBusiness.endsWithClass(filename);
-            });
+            files = Files.find(compilerOutputPath, 50, (path, attributes) ->
+                    path.toFile().getName().matches(PathBusiness.regexFilename(filename)) && PathBusiness.endsWithClass(path.toFile().getName()));
 
             files.forEach(file -> {
                 String destinationUrl = javaAbsoluteDirLocation + file.toFile().getName();
                 try {
                     FilesWorker.setFileWritable(destinationUrl);
-
-                    Path destination = Paths.get(destinationUrl);
-                    Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(file, Paths.get(destinationUrl), StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException ioe) {
                     notificationWorker.addFailedCopy(destinationUrl);
                 }
