@@ -3,6 +3,11 @@ package com.shumyk.classcopier.notificator;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
 
+/**
+ * Class created for working with two notificators that are used in project.
+ * In order to separate all management and work it was placed here.
+ * Class creates new notificators, adds then new messages to them and displays notifications at the end.
+ */
 public class NotificationWorker {
 
     private static final String GROUP_ID_FFF = "FailedFindFiles";
