@@ -1,11 +1,12 @@
 <idea-plugin>
   <id>com.shumyk</id>
   <name>ClassCopier</name>
-  <version>1.0</version>
+  <version>1.1</version>
   <vendor email="dima.shumyk@gmail.com" url="https://github.com/Shumyk">Dima Shumyk</vendor>
 
   <description><![CDATA[
-      Helps to copy .class files into working directory
+      Helps to copy .class files into working directory of changed files.
+      It checks changed files in VSC and then searches for compiled classes in compiler output folder and copies to location of changed files.
     ]]></description>
 
   <idea-version since-build="173.0"/>
@@ -16,7 +17,7 @@
     <action id="CopyClass.VersionControl.Toolbar"
             class="com.shumyk.classcopier.actions.CopyClassFiles"
             text="Copy .class files"
-            description="Copying selected .class files into src module">
+            description="Copying .class files into location of changed files">
         <add-to-group group-id="ChangesViewToolbar" anchor="last"/>
     </action>
   </actions>
