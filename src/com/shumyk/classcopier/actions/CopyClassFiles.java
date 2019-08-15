@@ -15,18 +15,13 @@ import java.util.List;
 
 public class CopyClassFiles extends AnAction {
 
-    private NotificationWorker notificationWorker;
-
-    private String compilerOut;
-    private List<String> sourceRoots;
-
     @Override public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
         if (project == null) return;
 
-        notificationWorker = new NotificationWorker(project);
-        compilerOut = ModuleWorker.getCompilerOutput(project);
-        sourceRoots = ModuleWorker.getSourceRoots(project);
+        NotificationWorker notificationWorker = new NotificationWorker(project);
+        String compilerOut = ModuleWorker.getCompilerOutput(project);
+        List<String> sourceRoots = ModuleWorker.getSourceRoots(project);
 
         LocalChangeList localChangeList = ChangeListManager.getInstance(project).getDefaultChangeList();
         Collection<Change> changes = localChangeList.getChanges();
@@ -40,15 +35,16 @@ public class CopyClassFiles extends AnAction {
                         notificationWorker.addNewFile(PathBusiness.extensionToClass(filePath));
                    return isJavaFile;
                 })
-                .forEach(this::copyClassFile);
+                .forEach(el -> copyClassFile(el, compilerOut, sourceRoots, notificationWorker));
 
         notificationWorker.doNotify();
     }
 
-    private void copyClassFile(final Change change) {
+    private void copyClassFile(final Change change, final String compilerOut,
+                               final List<String> sourceRoots, final NotificationWorker notificationWorker) {
         if (change.getVirtualFile() == null) return;
-        String fileUrl = change.getVirtualFile().getPath();
 
+        String fileUrl = change.getVirtualFile().getPath();
         String javaAbsoluteDirLocation = PathBusiness.cutFilename(fileUrl);
         String relativeJavaFileLocation = PathBusiness.getRelativeFileLocation(sourceRoots, fileUrl);
         String filePackage = PathBusiness.cutFilename(relativeJavaFileLocation);
