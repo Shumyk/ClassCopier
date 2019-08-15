@@ -3,15 +3,12 @@ package com.shumyk.classcopier.actions;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.compiler.ex.CompilerPathsEx;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.vcs.FileStatus;
 import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
+import com.shumyk.classcopier.module.ModuleWorker;
 import com.shumyk.classcopier.notificator.NotificationWorker;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
@@ -36,7 +32,8 @@ public class CopyClassFiles extends AnAction {
     @Override public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
         notificationWorker = new NotificationWorker(project);
-        initCompilerOut(project);
+        compilerOut = ModuleWorker.getCompilerOutput(project);
+        sourceRoots = ModuleWorker.getSourceRoots(project);
 
         LocalChangeList localChangeList = ChangeListManager.getInstance(project).getDefaultChangeList();
         Collection<Change> changes = localChangeList.getChanges();
@@ -120,35 +117,5 @@ public class CopyClassFiles extends AnAction {
         if (correctRoot.equals("")) return null;
         // cutting all path with source root folder in order to make relative
         return fileUrl.replaceFirst(".+" + correctRoot, "");
-    }
-
-    /**
-     * Walks through all modules in provided project and searches module with sources root.
-     * For this root then obtains compiler output folder path and sets to class variable.
-     * @param project - current project
-     */
-    private void initCompilerOut(Project project) {
-        Module moduleWithRoots = null;
-        // search through all modules in project
-        for (Module module: ModuleManager.getInstance(project).getModules()) {
-            VirtualFile[] files = ModuleRootManager.getInstance(module).getSourceRoots();
-            // if module has some sources root - we need to output folder for this root
-            if (files.length > 0) {
-                moduleWithRoots = module;
-
-                sourceRoots = new ArrayList<>();
-                for (VirtualFile file : files) {
-                    sourceRoots.add("/" + file.getParent().getName() + "/" + file.getName());
-                }
-            }
-        }
-
-        // in case it didn't find anything try find default module 'src'
-        if (moduleWithRoots == null)
-            moduleWithRoots = ModuleManager.getInstance(project).findModuleByName("src");
-
-        // obtain compiler output folder for module
-        if (moduleWithRoots != null)
-            compilerOut = CompilerPathsEx.getModuleOutputPath(moduleWithRoots, false);
     }
 }
