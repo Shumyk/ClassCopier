@@ -10,6 +10,9 @@ import com.intellij.openapi.vfs.VirtualFile;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class for dealing with Module business.
+ */
 public class ModuleWorker {
 
     private static final String SLASH = "/";

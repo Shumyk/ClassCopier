@@ -2,15 +2,12 @@ package com.shumyk.classcopier.actions;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.FileStatus;
 import com.intellij.openapi.vcs.changes.*;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.VirtualFileManager;
+import com.shumyk.classcopier.FilesWorker;
 import com.shumyk.classcopier.module.ModuleWorker;
 import com.shumyk.classcopier.notificator.NotificationWorker;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,8 +18,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class CopyClassFiles extends AnAction {
-
-    private static final Logger LOG = Logger.getLogger(CopyClassFiles.class);
 
     private NotificationWorker notificationWorker;
 
@@ -73,7 +68,7 @@ public class CopyClassFiles extends AnAction {
             files.forEach(file -> {
                 String destinationUrl = javaAbsoluteDirLocation + file.toFile().getName();
                 try {
-                    setFileWritable(destinationUrl);
+                    FilesWorker.setFileWritable(destinationUrl);
 
                     Path destination = Paths.get(destinationUrl);
                     Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
@@ -86,18 +81,6 @@ public class CopyClassFiles extends AnAction {
         } finally {
             if (files != null) files.close();
         }
-    }
-
-    private void setFileWritable(final String fileUrl) {
-            Runnable writeAction = () -> {
-                try {
-                    VirtualFile file = VirtualFileManager.getInstance().findFileByUrl("file://".concat(fileUrl));
-                    if (file != null) file.setWritable(true);
-                } catch (IOException ioe) {
-                    LOG.error("Error during setting file as writable.", ioe);
-                }
-            };
-            ApplicationManager.getApplication().runWriteAction(writeAction);
     }
 
     /**
