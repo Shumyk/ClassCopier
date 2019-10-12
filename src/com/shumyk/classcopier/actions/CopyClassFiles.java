@@ -32,6 +32,7 @@ public class CopyClassFiles extends AnAction {
                 .forEach(change -> copyClassFile(change, compilerOut, sourceRoots, notificationWorker));
 
         notificationWorker.doNotify();
+        notificationWorker.notifySuccess();
     }
 
     /**
