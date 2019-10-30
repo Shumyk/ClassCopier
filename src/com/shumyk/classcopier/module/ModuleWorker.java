@@ -1,6 +1,6 @@
 package com.shumyk.classcopier.module;
 
-import com.intellij.openapi.compiler.ex.CompilerPathsEx;
+import com.intellij.openapi.compiler.CompilerPaths;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
@@ -39,7 +39,7 @@ public class ModuleWorker {
             moduleWithRoots = ModuleManager.getInstance(project).findModuleByName(DEFAULT_MODULE);
 
         // obtain compiler output folder for module
-        return CompilerPathsEx.getModuleOutputPath(moduleWithRoots, false);
+        return CompilerPaths.getModuleOutputPath(moduleWithRoots, false);
     }
 
     /**
